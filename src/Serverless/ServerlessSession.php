@@ -29,7 +29,6 @@ class ServerlessSession implements \SessionHandlerInterface {
         $this->marshaler = new \Aws\DynamoDb\Marshaler();
 
         session_set_save_handler($this, true);
-        return session_start();        
     }
 
     /**
@@ -44,7 +43,6 @@ class ServerlessSession implements \SessionHandlerInterface {
      * 
      * @param string $id 
      * @return bool 
-     * @throws ServerlessSessionStorageFault 
      */
     public function destroy($id): bool {
         if( !$this->enabled ) return false;
@@ -61,7 +59,7 @@ class ServerlessSession implements \SessionHandlerInterface {
             return true;
         }
         catch(\Exception $e) {
-            throw new ServerlessSessionStorageFault();
+            return false;
         }
     }
 
@@ -79,7 +77,6 @@ class ServerlessSession implements \SessionHandlerInterface {
      * @param string $path 
      * @param string $name 
      * @return bool 
-     * @throws ServerlessSessionStorageFault 
      */
     public function open($path, $name): bool {
         try {
@@ -90,7 +87,7 @@ class ServerlessSession implements \SessionHandlerInterface {
             $this->enabled = true;
         }
         catch(\Exception $e) {
-            throw new ServerlessSessionStorageFault();
+            return false;
         }
 
         return $this->enabled;
@@ -100,7 +97,6 @@ class ServerlessSession implements \SessionHandlerInterface {
      * 
      * @param string $id 
      * @return string|false 
-     * @throws ServerlessSessionStorageFault 
      */
     public function read($id): string|false  {
         if( !$this->enabled ) return false;
@@ -125,7 +121,7 @@ class ServerlessSession implements \SessionHandlerInterface {
             return $this->data['payload'];
         }
         catch(\Exception $e) {
-            throw new ServerlessSessionStorageFault();
+            return false;
         }
 
         return false;
