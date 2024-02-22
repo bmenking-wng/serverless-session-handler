@@ -9,7 +9,7 @@ Add the following repository to your composer.json:
 
 ```
 ...
-respositories: [
+"repositories": [
     {
         "type": "vcs",
         "url": "https://github.com/bmenking-wng/serverless-session-handler"
@@ -21,7 +21,11 @@ respositories: [
 
 Installation is easy via [Composer](https://getcomposer.org/):
 
-```$ composer require worldnewsgroup/session-session-handler```
+```bash
+
+$ composer require worldnewsgroup/serverless-session-handler
+
+```
 
 or add it manually to your composer.json.
 
@@ -32,7 +36,7 @@ Create a DynamoDB table with the following defintion (serverless resource defini
 ```yaml
 Resources:
     resources:
-        userTable:
+        sessionTable:
             Type: AWS::DynamoDB::Table
             Properties:
             TableName: ${tablename}
@@ -51,7 +55,7 @@ In code, set up the handler.  Use the standard access methods for PHP sessions.
 ```php
     use WorldNewsGroup\Serverless\ServerlessSession;
 
-    $handler = ServerlessSession('dynamodb_table_name', 'us-east-1');
+    $handler = ServerlessSession('dynamodb_table_name', $_ENV['AWS_REGION']);
 
     ...
 
