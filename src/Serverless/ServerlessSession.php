@@ -2,25 +2,26 @@
 
 namespace WorldNewsGroup\Serverless;
 
-class ServerlessSession implements \SessionHandlerInterface {
-    private static $instance = null;
+use Aws\DynamoDb\DynamoDbClient;
+use Aws\DynamoDb\Marshaler;
 
-    private $db;
-    private $enabled;
-    private $tableName;
-    private $data;
-    private $marshaler;
-    public $last_error;
+final class ServerlessSession implements \SessionHandlerInterface {
+    private static ?ServerlessSession $instance = null;
+
+    private DynamoDbClient $db;
+    private bool $enabled = false;
+    private string $tableName;
+    private Marshaler $marshaler;
+    public ?\Exception $last_error;
 
     /**
      * 
-     * @param mixed $tablename 
+     * @param string $tablename 
      * @param string $region 
      * @return void 
      */
-    private function __construct($tablename, $region = 'us-east-1') {
-
-        $this->db = new \Aws\DynamoDb\DynamoDbClient([
+    private function __construct(string $tablename, string $region = 'us-east-1') {
+        $this->db = new DynamoDbClient([
             'region'=>$region,
             'version'=>'latest'
         ]);
@@ -33,11 +34,11 @@ class ServerlessSession implements \SessionHandlerInterface {
 
     /**
      * 
-     * @param mixed $tablename 
-     * @param mixed $region 
+     * @param string $tablename 
+     * @param string $region 
      * @return ServerlessSession 
      */
-    public static function getInstance($tablename, $region): ServerlessSession {
+    public static function getInstance(string $tablename, string $region): ServerlessSession {
         if( is_null(self::$instance) ) {
             self::$instance = new static($tablename, $region);
         }
@@ -60,7 +61,7 @@ class ServerlessSession implements \SessionHandlerInterface {
      * @param string $id 
      * @return bool 
      */
-    public function destroy($id): bool {
+    public function destroy(string $id): bool {
         if( !$this->enabled ) return false;
 
         try {
@@ -75,6 +76,7 @@ class ServerlessSession implements \SessionHandlerInterface {
             return true;
         }
         catch(\Exception $e) {
+            $this->last_error = $e;
             return false;
         }
     }
@@ -84,7 +86,7 @@ class ServerlessSession implements \SessionHandlerInterface {
      * @param int $max_lifetime 
      * @return int|false 
      */
-    public function gc($max_lifetime): int|false  {
+    public function gc(int $max_lifetime): int|false  {
         return false;
     }
 
@@ -94,7 +96,7 @@ class ServerlessSession implements \SessionHandlerInterface {
      * @param string $name 
      * @return bool 
      */
-    public function open($path, $name): bool {
+    public function open(string $path, string $name): bool {
         try {
             $table = $this->db->describeTable([
                 'TableName'=>$this->tableName
@@ -103,6 +105,7 @@ class ServerlessSession implements \SessionHandlerInterface {
             $this->enabled = true;
         }
         catch(\Exception $e) {
+            $this->last_error = $e;
             $this->enabled = false;
         }
 
@@ -114,7 +117,7 @@ class ServerlessSession implements \SessionHandlerInterface {
      * @param string $id 
      * @return string|false 
      */
-    public function read($id): string|false  {
+    public function read(string $id): string|false  {
         if( !$this->enabled ) return false;
 
         try {
@@ -127,20 +130,18 @@ class ServerlessSession implements \SessionHandlerInterface {
                 ]
             ]);
 
+            $response = ['payload'=>''];
+
             if( isset($result['Item']) > 0 ) {
-                $this->data = $this->marshaler->unMarshalItem($result['Item']);
-            }
-            else {
-                $this->data['payload'] = '';
+                $response = $this->marshaler->unMarshalItem((array)$result['Item']);
             }
 
-            return $this->data['payload'];
+            return $response['payload'];
         }
         catch(\Exception $e) {
+            $this->last_error = $e;
             return false;
         }
-
-        return false;
     }
 
     /**
@@ -149,21 +150,22 @@ class ServerlessSession implements \SessionHandlerInterface {
      * @param string $data 
      * @return bool 
      */
-    public function write($id, $data): bool {
+    public function write(string $id, string $data): bool {
         if( !$this->enabled ) return false;
 
-        $this->data['id'] = $id;
-        $this->data['payload'] = $data;
-        $this->data['lastModified'] = time();
+        $payload['id'] = $id;
+        $payload['payload'] = $data;
+        $payload['lastModified'] = time();
 
         try {
             $result = $this->db->putItem([
                 'TableName'=>$this->tableName,
-                'Item'=>$this->marshaler->marshalItem($this->data)
+                'Item'=>$this->marshaler->marshalItem($payload)
             ]);
             return true;
         }
         catch(\Exception $e) {
+            $this->last_error = $e;
             return false;
         }
     }
@@ -173,10 +175,4 @@ class ServerlessSession implements \SessionHandlerInterface {
     public function __wakeup() {
         throw new \Exception('Cannot unserialize a singleton');
     }
-}
-
-class SessionPayload {
-    public $id;
-    public $lastModified;
-    public $payload;
 }
