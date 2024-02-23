@@ -3,6 +3,8 @@
 namespace WorldNewsGroup\Serverless;
 
 class ServerlessSession implements \SessionHandlerInterface {
+    private static $instance = null;
+
     private $db;
     private $enabled;
     private $tableName;
@@ -16,7 +18,7 @@ class ServerlessSession implements \SessionHandlerInterface {
      * @param string $region 
      * @return void 
      */
-    public function __construct($tablename, $region = 'us-east-1') {
+    private function __construct($tablename, $region = 'us-east-1') {
 
         $this->db = new \Aws\DynamoDb\DynamoDbClient([
             'region'=>$region,
@@ -27,8 +29,22 @@ class ServerlessSession implements \SessionHandlerInterface {
         $this->enabled = false;
 
         $this->marshaler = new \Aws\DynamoDb\Marshaler();
+    }
 
-        session_set_save_handler($this, true);
+    /**
+     * 
+     * @param mixed $tablename 
+     * @param mixed $region 
+     * @return ServerlessSession 
+     */
+    public static function getInstance($tablename, $region): ServerlessSession {
+        if( is_null(self::$instance) ) {
+            self::$instance = new static($tablename, $region);
+        }
+        
+        session_set_save_handler(self::$instance, true);
+
+        return self::$instance;        
     }
 
     /**
@@ -87,7 +103,7 @@ class ServerlessSession implements \SessionHandlerInterface {
             $this->enabled = true;
         }
         catch(\Exception $e) {
-            return false;
+            $this->enabled = false;
         }
 
         return $this->enabled;
@@ -150,6 +166,12 @@ class ServerlessSession implements \SessionHandlerInterface {
         catch(\Exception $e) {
             return false;
         }
+    }
+
+    protected function __clone() {}
+
+    public function __wakeup() {
+        throw new \Exception('Cannot unserialize a singleton');
     }
 }
 

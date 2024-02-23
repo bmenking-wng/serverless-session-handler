@@ -34,18 +34,19 @@ or add it manually to your composer.json.
 Create a DynamoDB table with the following defintion (serverless resource definition):
 
 ```yaml
-Resources:
-    resources:
+resources:
+    Resources:
         sessionTable:
             Type: AWS::DynamoDB::Table
             Properties:
-            TableName: ${tablename}
-            KeySchema:
-                - AttributeName: jwt
-                KeyType: HASH
-            AttributeDefinitions:
-                - AttributeName: jwt
-                AttributeType: S
+                #BillingMode: PAY_PER_REQUEST
+                TableName: ${self:service}-sessions
+                AttributeDefinitions:
+                - AttributeName: id
+                    AttributeType: S
+                KeySchema:
+                - AttributeName: id
+                    KeyType: HASH
 ```
 
 Verify the Serverless IAM roles or permissions are correct for connecting to that DynamoDB.
@@ -55,7 +56,7 @@ In code, set up the handler.  Use the standard access methods for PHP sessions.
 ```php
     use WorldNewsGroup\Serverless\ServerlessSession;
 
-    $handler = ServerlessSession('dynamodb_table_name', $_ENV['AWS_REGION']);
+    ServerlessSession::getInstance('dynamodb_table_name', $_ENV['AWS_REGION']);
 
     ...
 
