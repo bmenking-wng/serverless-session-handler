@@ -1,23 +1,8 @@
 # Serverless PHP Session Handler
 
-## Intent
-
+Provides a PHP session handler for AWS DynamoDB when hosting websites on Serverless.  
 
 ## Installation
-
-Add the following repository to your composer.json:
-
-```
-...
-"repositories": [
-    {
-        "type": "vcs",
-        "url": "https://github.com/bmenking-wng/serverless-session-handler"
-    },
-    ...
-],
-...
-```
 
 Installation is easy via [Composer](https://getcomposer.org/):
 
@@ -51,15 +36,28 @@ resources:
 
 Verify the Serverless IAM roles or permissions are correct for connecting to that DynamoDB.
 
+```yaml
+provider:
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:DeleteItem
+        - dynamodb:DescribeTable
+      Resource:
+        - "Fn::GetAtt": [ sessionTable, Arn ]
+```
+
 In code, set up the handler.  Use the standard access methods for PHP sessions.
 
 ```php
     use WorldNewsGroup\Serverless\ServerlessSession;
 
-    ServerlessSession::getInstance('dynamodb_table_name', $_ENV['AWS_REGION']);
+    ServerlessSession::getInstance('<dynamodb_table_name>', '<aws region>');
 
     ...
-
+    // set the Session variable token to 'jwt'
     $_SESSION['token'] = 'jwt';
 
 ```
