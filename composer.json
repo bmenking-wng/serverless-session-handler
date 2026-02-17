@@ -1,7 +1,6 @@
 {
     "name": "worldnewsgroup/serverless-session-handler",
     "description": "Enable PHP sessions using DynamoDB in Serverless",
-    "version": "v1.0",
     "keywords": [
         "php",
         "serverless",
