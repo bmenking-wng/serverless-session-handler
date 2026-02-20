@@ -31,7 +31,7 @@ final class ServerlessSession implements \SessionHandlerInterface {
 
         $this->marshaler = new \Aws\DynamoDb\Marshaler();
 
-        session_set_save_handler(self::$instance, true);
+        session_set_save_handler($this, true);
         session_start();
     }
 
