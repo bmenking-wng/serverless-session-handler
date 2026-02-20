@@ -31,6 +31,7 @@ final class ServerlessSession implements \SessionHandlerInterface {
 
         $this->marshaler = new \Aws\DynamoDb\Marshaler();
 
+        session_set_save_handler(self::$instance, true);
         session_start();
     }
 
@@ -44,8 +45,6 @@ final class ServerlessSession implements \SessionHandlerInterface {
         if( is_null(self::$instance) ) {
             self::$instance = new static($tablename, $region);
         }
-        
-        session_set_save_handler(self::$instance, true);
 
         return self::$instance;        
     }
@@ -177,4 +176,8 @@ final class ServerlessSession implements \SessionHandlerInterface {
     public function __wakeup() {
         throw new \Exception('Cannot unserialize a singleton');
     }
+
+    public function __destruct() {
+        session_write_close();
+    }    
 }

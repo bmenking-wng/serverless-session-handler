@@ -54,6 +54,8 @@ In code, set up the handler.  Use the standard access methods for PHP sessions.
 ```php
     use WorldNewsGroup\Serverless\ServerlessSession;
 
+    require('vendor/autoload.php');
+    // put as close to the top (just under the require('vendor/autoload.php') is best) as possible
     ServerlessSession::getInstance('<dynamodb_table_name>', '<aws region>');
 
     ...
